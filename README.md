@@ -4,6 +4,12 @@ My experiments, try-outs and examples of taking a functional programming approac
 
 It is dependent on features of Java 8 and later.
 
+I am inspired by the book Hutton, G.; Programming in Haskell; 2016 2nd edition; Cambridge University Press.
+I want to have simple Maybe and Either as a functor and a monad so that I can use them for my work in Java to achieve:
+
+- avoid nulls;
+- avoid throwing exceptions.
+
 ## How to run locally
 
 From the project root folder:
