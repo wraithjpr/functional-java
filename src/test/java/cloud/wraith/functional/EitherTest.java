@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.junit.Test;
 
@@ -19,6 +20,7 @@ import cloud.wraith.functional.Either.Right;
 public class EitherTest {
     private final static String GOODBYE = "goodbye";
     private final static String HELLO = "hello";
+    private final static String WORLD = "world";
     private final static String LEFT_VALUE = "I am left-handed";
     private final static String LEFT_VALUE_DEFAULT = "I am left-handed by default";
 
@@ -302,6 +304,50 @@ public class EitherTest {
     @Test
     public void shouldShowARightString() {
         assertEquals(String.format("Either.right[%s]", HELLO), Either.<String, String>right(HELLO).toString());
+    }
+
+    /**
+     * Test map() for a Right.
+     */
+    @Test
+    public void shouldMapARight() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should map a Right", String.format("%s, %s", HELLO, WORLD),
+                Either.<String, String>right(WORLD).map(fxn.apply(HELLO)).get().get());
+    }
+
+    /**
+     * Test map() for a Left.
+     */
+    @Test
+    public void shouldNotMapALeft() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should not map a Left", LEFT_VALUE,
+                Either.<String, String>left(LEFT_VALUE).map(fxn.apply(HELLO)).getLeft().get());
+    }
+
+    /**
+     * Test fmap() for a Right.
+     */
+    @Test
+    public void shouldFmapARight() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should fmap a Right", String.format("%s, %s", HELLO, WORLD),
+                Either.fmap(fxn.apply(HELLO), Either.<String, String>right(WORLD)).get().get());
+    }
+
+    /**
+     * Test fmap() for a Left.
+     */
+    @Test
+    public void shouldNotFmapALeft() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should not fmap a Left", LEFT_VALUE,
+                Either.fmap(fxn.apply(HELLO), Either.<String, String>left(LEFT_VALUE)).getLeft().get());
     }
 
 }

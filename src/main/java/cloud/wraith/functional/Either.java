@@ -1,10 +1,20 @@
 package cloud.wraith.functional;
 
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+/**
+ * Either monad.
+ *
+ * <p>
+ * {@code} data Either l a = Left l a | Right l a
+ *
+ * instance Functor Either where -- fmap :: (a -> b) -> Either l a -> Either l b
+ * fmap _ (Left x _) = Left x _ fmap g (Right _ x) = Right _ (g x) {code}
+ */
 public abstract class Either<L, A> {
 
     /**
@@ -14,10 +24,12 @@ public abstract class Either<L, A> {
     }
 
     public static <L, A> Left<L, A> left(final L value) {
+        Objects.requireNonNull(value);
         return Left.of(value);
     }
 
     public static <L, A> Right<L, A> right(final A value) {
+        Objects.requireNonNull(value);
         return Right.of(value);
     }
 
@@ -43,6 +55,42 @@ public abstract class Either<L, A> {
 
     public abstract Either<L, A> biPeek(Consumer<? super L> consumerL, Consumer<? super A> consumerR);
 
+    /**
+     * Functor fmap function.
+     *
+     * <p>
+     * {@code} fmap :: (a -> b) -> Either l a -> Either l b {code}
+     *
+     * @param A   The right-hand type of the argument Either
+     * @param B   The right-hand type of the result Either
+     * @param L   The left-hand type of both argument and result Eithers
+     * @param fxn The mapping function; maps argument values in the type A to result
+     *            values in the type B
+     * @param fa  The source Either<L, A> functor
+     * @return The result Either<L, B> functor
+     */
+    public static <A, B, L> Either<L, B> fmap(Function<? super A, ? extends B> fxn, Either<L, A> fa) {
+        Objects.requireNonNull(fxn);
+        Objects.requireNonNull(fa);
+
+        return fa.map(fxn);
+    }
+
+    /**
+     * Map function.
+     *
+     * @param A   The right-hand type of the argument Either
+     * @param B   The right-hand type of the result Either
+     * @param L   The left-hand type of both argument and result Eithers
+     * @param fxn The mapping function; maps argument values in the type A to result
+     *            values in the type B
+     * @return The result Either<L, B>
+     */
+    public abstract <B> Either<L, B> map(Function<? super A, ? extends B> fxn);
+
+    /**
+     * Left implementation of Either.
+     */
     static final class Left<L, A> extends Either<L, A> {
         private final L value;
 
@@ -112,12 +160,20 @@ public abstract class Either<L, A> {
         }
 
         @Override
+        public <B> Either<L, B> map(Function<? super A, ? extends B> fxn) {
+            return Either.<L, B>left(value);
+        }
+
+        @Override
         public String toString() {
             return String.format("Either.left[%s]", value.toString());
         }
 
     }
 
+    /**
+     * Right implementation of Either
+     */
     static final class Right<L, A> extends Either<L, A> {
         private final A value;
 
@@ -184,6 +240,13 @@ public abstract class Either<L, A> {
         public Either<L, A> biPeek(Consumer<? super L> consumerL, Consumer<? super A> consumerR) {
             Objects.requireNonNull(consumerR).accept(value);
             return this;
+        }
+
+        @Override
+        public <B> Either<L, B> map(Function<? super A, ? extends B> fxn) {
+            Objects.requireNonNull(fxn);
+
+            return Either.<L, B>right(fxn.apply(value));
         }
 
         @Override
