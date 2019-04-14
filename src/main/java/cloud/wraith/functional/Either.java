@@ -169,6 +169,23 @@ public abstract class Either<L, A> {
             return String.format("Either.left[%s]", value.toString());
         }
 
+        @Override
+        public boolean equals(final Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (!(obj instanceof Either))
+                return false;
+
+            Either<?, ?> other = (Either<?, ?>) obj;
+
+            if (!other.isLeft())
+                return false;
+
+            return Objects.equals(value, other.getLeft().get());
+        }
+
     }
 
     /**
@@ -252,6 +269,23 @@ public abstract class Either<L, A> {
         @Override
         public String toString() {
             return String.format("Either.right[%s]", value.toString());
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (!(obj instanceof Either))
+                return false;
+
+            Either<?, ?> other = (Either<?, ?>) obj;
+
+            if (!other.isRight())
+                return false;
+
+            return Objects.equals(value, other.get().get());
         }
 
     }
