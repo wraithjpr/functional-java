@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.junit.Test;
 
@@ -19,6 +20,7 @@ import cloud.wraith.functional.Either.Right;
 public class EitherTest {
     private final static String GOODBYE = "goodbye";
     private final static String HELLO = "hello";
+    private final static String WORLD = "world";
     private final static String LEFT_VALUE = "I am left-handed";
     private final static String LEFT_VALUE_DEFAULT = "I am left-handed by default";
 
@@ -302,6 +304,169 @@ public class EitherTest {
     @Test
     public void shouldShowARightString() {
         assertEquals(String.format("Either.right[%s]", HELLO), Either.<String, String>right(HELLO).toString());
+    }
+
+    /**
+     * Test a equals() for a Left.
+     */
+    @Test
+    public void shouldEqualALeftOfEqualValue() {
+        Either<String, String> left1 = Either.left(LEFT_VALUE);
+        Either<String, String> left2 = Either.left(LEFT_VALUE);
+        Either<String, String> leftDefault = Either.left(LEFT_VALUE_DEFAULT);
+        Either<String, String> leftInRight = Either.right(LEFT_VALUE);
+        Either<String, String> right = Either.right(HELLO);
+
+        assertTrue("Should equal itself", left1.equals(left1));
+        assertEquals("Should equal itself", left1, left1);
+
+        assertTrue("Should equal another Left of equal value", left1.equals(left2));
+        assertEquals("Should equal another Left of equal value", left1, left2);
+
+        assertFalse("Should not equal another Left of different value", left1.equals(leftDefault));
+        assertNotEquals("Should not equal another Left of different value", left1, leftDefault);
+
+        assertFalse("Should not equal a Right of equal value", left1.equals(leftInRight));
+        assertNotEquals("Should not equal a Right of equal value", left1, leftInRight);
+
+        assertFalse("Should not equal a Right of different value", left1.equals(right));
+        assertNotEquals("Should not equal a Right of different value", left1, right);
+
+        assertFalse("Should not equal a null", left1.equals(null));
+        assertNotEquals("Should not equal a null", left1, null);
+
+        // assertFalse("Should not equal another type", left1.equals(LEFT_VALUE));
+        assertNotEquals("Should not equal another type", left1, LEFT_VALUE);
+    }
+
+    /**
+     * Test a equals() for a Right.
+     */
+    @Test
+    public void shouldEqualARightOfEqualValue() {
+        Either<String, String> hello1 = Either.right(HELLO);
+        Either<String, String> hello2 = Either.right(HELLO);
+        Either<String, String> goodbye = Either.right(GOODBYE);
+        Either<String, String> helloInLeft = Either.left(HELLO);
+        Either<String, String> left = Either.left(LEFT_VALUE);
+
+        assertTrue("Should equal itself", hello1.equals(hello1));
+        assertEquals("Should equal itself", hello1, hello1);
+
+        assertTrue("Should equal another Right of equal value", hello1.equals(hello2));
+        assertEquals("Should equal another Right of equal value", hello1, hello2);
+
+        assertFalse("Should not equal another Right of different value", hello1.equals(goodbye));
+        assertNotEquals("Should not equal another Right of different value", hello1, goodbye);
+
+        assertFalse("Should not equal a Left of equal value", hello1.equals(helloInLeft));
+        assertNotEquals("Should not equal a Left of equal value", hello1, helloInLeft);
+
+        assertFalse("Should not equal a Left of different value", hello1.equals(left));
+        assertNotEquals("Should not equal a Left of different value", hello1, left);
+
+        assertFalse("Should not equal a null", hello1.equals(null));
+        assertNotEquals("Should not equal a null", hello1, null);
+
+        // assertFalse("Should not equal another type", hello1.equals(HELLO));
+        assertNotEquals("Should not equal another type", hello1, HELLO);
+    }
+
+    /**
+     * Test map() for a Left.
+     */
+    @Test
+    public void shouldNotMapALeft() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should not map a Left", LEFT_VALUE,
+                Either.<String, String>left(LEFT_VALUE).map(fxn.apply(HELLO)).getLeft().get());
+    }
+
+    /**
+     * Test map() for a Right.
+     */
+    @Test
+    public void shouldMapARight() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should map a Right", String.format("%s, %s", HELLO, WORLD),
+                Either.<String, String>right(WORLD).map(fxn.apply(HELLO)).get().get());
+    }
+
+    /**
+     * Test fmap() for a Left.
+     */
+    @Test
+    public void shouldNotFmapALeft() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should not fmap a Left", LEFT_VALUE,
+                Either.fmap(fxn.apply(HELLO), Either.<String, String>left(LEFT_VALUE)).getLeft().get());
+    }
+
+    /**
+     * Test fmap() for a Right.
+     */
+    @Test
+    public void shouldFmapARight() {
+        Function<String, Function<String, String>> fxn = s1 -> s2 -> String.format("%s, %s", s1, s2);
+
+        assertEquals("Should fmap a Right", String.format("%s, %s", HELLO, WORLD),
+                Either.fmap(fxn.apply(HELLO), Either.<String, String>right(WORLD)).get().get());
+    }
+
+    /**
+     * Test that Left satisfies the Functor laws.
+     */
+    @Test
+    public void shouldSatisfyFunctorLawsForALeft() {
+        Either<String, Integer> left = Either.<String, Integer>left(LEFT_VALUE);
+
+        // Identity function
+        Function<Integer, Integer> id1 = x -> x;
+        Function<Either<String, Integer>, Either<String, Integer>> id2 = x -> x;
+
+        assertEquals("Should satify Functor law #1 with map", id2.apply(left), left.map(id1));
+        assertEquals("Should satify Functor law #1 with fmap", id2.apply(left), Either.fmap(id1, left));
+
+        // Two mapping functions
+        Function<Integer, Integer> g = x -> x + 3;
+        Function<Integer, Integer> h = x -> 256 * x;
+
+        assertEquals("Should satify Functor law #2 with map", left.map(g.compose(h)), left.map(h).map(g));
+        assertEquals("Should satify Functor law #2 with fmap", Either.fmap(g.compose(h), left),
+                Either.fmap(g, Either.fmap(h, left)));
+    }
+
+    /**
+     * Test that Right satisfies the Functor laws.
+     *
+     * <p>
+     * For the identity function, id, and two mapping functions g and h:
+     * <p>
+     * &nbsp;&nbsp;fmap id = id<br>
+     * &nbsp;&nbsp;fmap (g . h) = fmap g . fmap h
+     */
+    @Test
+    public void shouldSatisfyFunctorLawsForARight() {
+        final int I = 7;
+        Either<String, Integer> right = Either.<String, Integer>right(I);
+
+        // Identity function
+        Function<Integer, Integer> id1 = x -> x;
+        Function<Either<String, Integer>, Either<String, Integer>> id2 = x -> x;
+
+        assertEquals("Should satify Functor law #1 with map", id2.apply(right), right.map(id1));
+        assertEquals("Should satify Functor law #1 with fmap", id2.apply(right), Either.fmap(id1, right));
+
+        // Two mapping functions
+        Function<Integer, Integer> g = x -> x + 3;
+        Function<Integer, Integer> h = x -> 256 * x;
+
+        assertEquals("Should satify Functor law #2 with map", right.map(g.compose(h)), right.map(h).map(g));
+        assertEquals("Should satify Functor law #2 with fmap", Either.fmap(g.compose(h), right),
+                Either.fmap(g, Either.fmap(h, right)));
     }
 
 }
