@@ -112,7 +112,7 @@ public abstract class Either<L, A> {
      * @param fa  The source Either&lt;L,&nbsp;A&gt; functor
      * @return The result Either&lt;L,&nbsp;B&gt; functor
      */
-    public static <A, B, L> Either<L, B> fapply(Either<L, Function<? super A, ? extends B>> ffxn, final Either<L, A> fa) {
+    public static <A, B, L> Either<L, B> fapply(final Either<L, Function<? super A, ? extends B>> ffxn, final Either<L, A> fa) {
         Objects.requireNonNull(ffxn);
         Objects.requireNonNull(fa);
 

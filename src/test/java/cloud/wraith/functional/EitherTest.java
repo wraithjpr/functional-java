@@ -453,7 +453,7 @@ public class EitherTest {
      *
      * <p>For the identity function, id, and two mapping functions g and h:
      * {@code}
-     * fmap id = id<br>
+     * fmap id = id
      * fmap (g . h) = fmap g . fmap h
      * {code}
      */
@@ -507,7 +507,7 @@ public class EitherTest {
     @Test
     public void shouldApplyLeftFunctionToALeftValue() {
         final Either<String, String> mx = Either.<String, String>left(LEFT_VALUE);
-        final Either<String, String> left_g = Either.left(LEFT_FUNCTION_VALUE);
+        final Either<String, Function<String, String>> left_g = Either.left(LEFT_FUNCTION_VALUE);
         final Either<String, String> actual = left_g.apply(mx);
 
         final Either<String, String> expected = Either.left(LEFT_FUNCTION_VALUE);
@@ -532,7 +532,7 @@ public class EitherTest {
     public void shouldApplyLeftFunctionToARightValue() {
         final String x = WORLD;
         final Either<String, String> mx = Either.<String, String>right(x);
-        final Either<String, String> left_g = Either.left(LEFT_FUNCTION_VALUE);
+        final Either<String, Function<String, String>> left_g = Either.left(LEFT_FUNCTION_VALUE);
         final Either<String, String> actual = left_g.apply(mx);
 
         final Either<String, String> expected = Either.left(LEFT_FUNCTION_VALUE);
@@ -836,4 +836,412 @@ public class EitherTest {
         assertTrue("Should satify Applicative law #4 with apply", expected4.equals(actual4));
     }
 
+    /**
+     * Test fapply() for a Left function and a Left value.
+     * {@code}
+     * class Functor f => Applicative f where
+     *    pure :: a -> f a
+     *    (<*>) :: f (a -> b) -> f a -> f b
+     *
+     * <p>instance Applicative Either where
+     *    pure = Right
+     *    Left <*> _ = Left
+     *    (Right g) <*> mx = fmap g mx
+     * {code}
+     */
+    @Test
+    public void shouldFApplyLeftFunctionToALeftValue() {
+
+        final Either<String, String> actual = Either.fapply(
+            Either.left(LEFT_FUNCTION_VALUE),
+            Either.left(LEFT_VALUE)
+        );
+
+        final Either<String, String> expected = Either.left(LEFT_FUNCTION_VALUE);
+
+        assertTrue("Should fapply a Left function to a Left value", expected.equals(actual));
+    }
+
+    /**
+     * Test fapply() for a Left function and a Right value.
+     * {@code}
+     * class Functor f => Applicative f where
+     *    pure :: a -> f a
+     *    (<*>) :: f (a -> b) -> f a -> f b
+     *
+     * <p>instance Applicative Either where
+     *    pure = Right
+     *    Left <*> _ = Left
+     *    (Right g) <*> mx = fmap g mx
+     * {code}
+     */
+    @Test
+    public void shouldFApplyLeftFunctionToARightValue() {
+
+        final Either<String, String> actual = Either.fapply(
+            Either.left(LEFT_FUNCTION_VALUE),
+            Either.right(WORLD)
+        );
+
+        final Either<String, String> expected = Either.left(LEFT_FUNCTION_VALUE);
+
+        assertTrue("Should fapply a Left function to a Right value", expected.equals(actual));
+    }
+
+    /**
+     * Test fapply() for a Right function and a Left value.
+     * {@code}
+     * class Functor f => Applicative f where
+     *    pure :: a -> f a
+     *    (<*>) :: f (a -> b) -> f a -> f b
+     *
+     * <p>instance Applicative Either where
+     *    pure = Right
+     *    Left <*> _ = Left
+     *    (Right g) <*> mx = fmap g mx
+     * {code}
+     */
+    @Test
+    public void shouldFApplyRightFunctionToALeftValue() {
+        final Function<String, String> g = a -> String.format("%s, %s", HELLO, a);
+
+        final Either<String, String> actual = Either.fapply(
+            Either.pure(g),
+            Either.left(LEFT_VALUE)
+        );
+
+        final Either<String, String> expected = Either.left(LEFT_VALUE);
+
+        assertTrue("Should fapply a Right function to a Left value", expected.equals(actual));
+    }
+
+    /**
+     * Test fapply() for a Right function and a Right value.
+     * {@code}
+     * class Functor f => Applicative f where
+     *    pure :: a -> f a
+     *    (<*>) :: f (a -> b) -> f a -> f b
+     *
+     * <p>instance Applicative Either where
+     *    pure = Right
+     *    Left <*> _ = Left
+     *    (Right g) <*> mx = fmap g mx
+     * {code}
+     */
+    @Test
+    public void shouldFApplyRightFunctionToARightValue() {
+        final Function<String, String> g = a -> String.format("%s, %s", HELLO, a);
+
+        final Either<String, String> actual = Either.fapply(
+            Either.pure(g),
+            Either.right(WORLD)
+        );
+
+        final Either<String, String> expected = Either.right(String.format("%s, %s", HELLO, WORLD));
+
+        assertTrue("Should fapply a Right", expected.equals(actual));
+    }
+
+    /**
+     * Test that Left satisfies the Applicative laws.
+     *   See Hutton; Programming in Haskell; p163
+     *
+     * <p>For the identity function, id, and a mapping function g:
+     * {@code}
+     * pure id <*> x = x
+     * pure (g x) = pure g <*> pure x
+     * x <*> pure y = pure (\g -> g y) <*> x
+     * x <*> (y <*> z) = (pure (.) <*> x <*> y) <*> z
+     * {code}
+     */
+    @Test
+    public void shouldSatisfyFApplicativeLawsForALeft() {
+        final int I = 7;
+        final Integer i = Integer.valueOf(I);
+
+        // Identity function
+        final Function<Integer, Integer> id = x -> x;
+
+        // Two mapping functions
+        final Function<Integer, Integer> f = x -> 3 + x;
+        final Function<Integer, Integer> g = x -> 256 * x;
+
+        // Law #1
+        // x is a Left
+        // Expected
+        final Either<String, Integer> expected1 = Either.<String, Integer>left(LEFT_VALUE);
+
+        // Actual
+        final Either<String, Integer> actual1 = Either.fapply(
+            Either.pure(id),
+            Either.left(LEFT_VALUE)
+        );
+
+        assertEquals("Should satify Applicative law #1 with fapply", expected1, actual1);
+        assertTrue("Should satify Applicative law #1 with fapply", expected1.equals(actual1));
+
+        // Law #2
+        // There's no left side of a pure, so same as for a Right.
+        // Expected
+        final Either<String, Integer> expected2 = Either.<String, Integer>pure(g.apply(i));
+
+        // Actual
+        final Either<String, Integer> actual2 = Either.fapply(
+            Either.pure(g),
+            Either.pure(i)
+        );
+
+        assertEquals("Should satify Applicative law #2 with fapply", expected2, actual2);
+        assertTrue("Should satify Applicative law #2 with fapply", expected2.equals(actual2));
+
+        // Law #3
+        // x is a Left
+        // Lambda function:
+        // lambda :: g -> g y
+        final Function<Function<Integer, Integer>, Integer> lambda = fxn -> fxn.apply(i);
+
+        // Expected
+        final Either<String, Integer> expected3 = Either.fapply(
+            Either.left(LEFT_VALUE),
+            Either.pure(i)
+        );
+
+        // Actual
+        final Either<String, Integer> actual3 = Either.fapply(
+            Either.pure(lambda),
+            Either.left(LEFT_VALUE)
+        );
+
+        assertEquals("Should satify Applicative law #3 with fapply", expected3, actual3);
+        assertTrue("Should satify Applicative law #3 with fapply", expected3.equals(actual3));
+
+        // Law #4
+        // Compose function:
+        // (.) :: (b -> c) -> (a -> b) -> (a -> c)
+        final Function<Function<Integer, Integer>, Function<Function<Integer, Integer>, Function<Integer, Integer>>> compose = f1 -> g1 -> (x -> f1.apply(g1.apply(x)));
+
+        // First function goes left.
+        // Expected
+        final Either<String, Integer> expected41 = Either.fapply(
+            Either.left(LEFT_VALUE),
+            Either.fapply(
+                Either.right(g),
+                Either.right(i)
+            )
+        );
+
+        // Actual
+        final Either<String, Integer> actual41 = Either.fapply(
+            Either.fapply(
+                Either.fapply(
+                    Either.pure(compose),
+                    Either.left(LEFT_VALUE)
+                ),
+                Either.right(g)
+            ),
+            Either.right(i)
+        );
+
+        assertTrue("Should be a left", actual41.isLeft());
+        assertTrue("Should be a LEFT_VALUE", actual41.equals(Either.<String, Integer>left(LEFT_VALUE)));
+        assertEquals("Should satify Applicative law #4 with fapply", expected41, actual41);
+        assertTrue("Should satify Applicative law #4 with fapply", expected41.equals(actual41));
+
+        // Second function goes left.
+        // Expected
+        final Either<String, Integer> expected42 = Either.fapply(
+            Either.right(f),
+            Either.fapply(
+                Either.left(LEFT_VALUE),
+                Either.right(i)
+            )
+        );
+
+        // Actual
+        final Either<String, Integer> actual42 = Either.fapply(
+            Either.fapply(
+                Either.fapply(
+                    Either.pure(compose),
+                    Either.right(f)
+                ),
+                Either.left(LEFT_VALUE)
+            ),
+            Either.right(i)
+        );
+
+        assertTrue("Should be a left", actual42.isLeft());
+        assertTrue("Should be a LEFT_VALUE", actual42.equals(Either.<String, Integer>left(LEFT_VALUE)));
+        assertEquals("Should satify Applicative law #4 with fapply", expected42, actual42);
+        assertTrue("Should satify Applicative law #4 with fapply", expected42.equals(actual42));
+
+        // Both functions go left.
+        // Expected
+        final Either<String, Integer> expected43 = Either.fapply(
+            Either.left(LEFT_VALUE_DEFAULT),
+            Either.fapply(
+                Either.left(LEFT_VALUE),
+                Either.right(i)
+            )
+        );
+
+        // Actual
+        final Either<String, Integer> actual43 = Either.fapply(
+            Either.fapply(
+                Either.fapply(
+                    Either.pure(compose),
+                    Either.left(LEFT_VALUE_DEFAULT)
+                ),
+                Either.left(LEFT_VALUE)
+            ),
+            Either.right(i)
+        );
+
+        assertTrue("Should be a left", actual43.isLeft());
+        assertTrue("Should be a LEFT_VALUE", actual43.equals(Either.<String, Integer>left(LEFT_VALUE_DEFAULT)));
+        assertEquals("Should satify Applicative law #4 with fapply", expected43, actual43);
+        assertTrue("Should satify Applicative law #4 with fapply", expected43.equals(actual43));
+
+        // The value goes left.
+        // Expected
+        final Either<String, Integer> expected44 = Either.fapply(
+            Either.right(f),
+            Either.fapply(
+                Either.right(g),
+                Either.left(LEFT_VALUE)
+            )
+        );
+
+        // Actual
+        final Either<String, Integer> actual44 = Either.fapply(
+            Either.fapply(
+                Either.fapply(
+                    Either.pure(compose),
+                    Either.right(f)
+                ),
+                Either.right(g)
+            ),
+            Either.left(LEFT_VALUE)
+        );
+
+        assertTrue("Should be a left", actual44.isLeft());
+        assertTrue("Should be a LEFT_VALUE", actual44.equals(Either.<String, Integer>left(LEFT_VALUE)));
+        assertEquals("Should satify Applicative law #4 with fapply", expected44, actual44);
+        assertTrue("Should satify Applicative law #4 with fapply", expected44.equals(actual44));
+
+        // All goes left.
+        // Expected
+        final Either<String, Integer> expected45 = Either.fapply(
+            Either.left(LEFT_VALUE_DEFAULT),
+            Either.fapply(
+                Either.left(LEFT_VALUE),
+                Either.left(LEFT_VALUE)
+            )
+        );
+
+        // Actual
+        final Either<String, Integer> actual45 = Either.fapply(
+            Either.fapply(
+                Either.fapply(
+                    Either.pure(compose),
+                    Either.left(LEFT_VALUE_DEFAULT)
+                ),
+                Either.left(LEFT_VALUE)
+            ),
+            Either.left(LEFT_VALUE)
+        );
+
+        assertTrue("Should be a left", actual45.isLeft());
+        assertTrue("Should be a LEFT_VALUE", actual45.equals(Either.<String, Integer>left(LEFT_VALUE_DEFAULT)));
+        assertEquals("Should satify Applicative law #4 with fapply", expected45, actual45);
+        assertTrue("Should satify Applicative law #4 with fapply", expected45.equals(actual45));
+
+    }
+
+    /**
+     * Test that Right satisfies the Applicative laws.
+     *   See Hutton; Programming in Haskell; p163
+     *
+     * <p>For the identity function, id, and a mapping function g:
+     * {@code}
+     * pure id <*> x = x
+     * pure (g x) = pure g <*> pure x
+     * x <*> pure y = pure (\g -> g y) <*> x
+     * x <*> (y <*> z) = (pure (.) <*> x <*> y) <*> z
+     * {code}
+     */
+    @Test
+    public void shouldSatisfyFApplicativeLawsForARight() {
+        final int I = 7;
+        final Integer i = Integer.valueOf(I);
+
+        // Identity function
+        final Function<Integer, Integer> id = x -> x;
+
+        // Two mapping functions
+        final Function<Integer, Integer> f = x -> 3 + x;
+        final Function<Integer, Integer> g = x -> 256 * x;
+
+        // Law #1
+        // Expected
+        final Either<String, Integer> expected1 = Either.right(i);
+
+        // Actual
+        final Either<String, Integer> actual1 = Either.fapply(Either.pure(id), Either.right(i));
+
+        assertEquals("Should satify Applicative law #1 with fapply", expected1, actual1);
+        assertTrue("Should satify Applicative law #1 with fapply", expected1.equals(actual1));
+
+        // Law #2
+        // Expected
+        final Either<String, Integer> expected2 = Either.pure(g.apply(i));
+
+        // Actual
+        final Either<String, Integer> actual2 = Either.fapply(Either.pure(g), Either.pure(i));
+
+        assertEquals("Should satify Applicative law #2 with fapply", expected2, actual2);
+        assertTrue("Should satify Applicative law #2 with fapply", expected2.equals(actual2));
+
+        // Law #3
+        // Lambda function:
+        // lambda :: g -> g y
+        final Function<Function<Integer, Integer>, Integer> lambda = fxn -> fxn.apply(i);
+
+        // Expected
+        final Either<String, Integer> expected3 = Either.fapply(Either.right(g), Either.pure(i));
+
+        // Actual
+        final Either<String, Integer> actual3 = Either.fapply(Either.pure(lambda), Either.right(g));
+
+        assertEquals("Should satify Applicative law #3 with fapply", expected3, actual3);
+        assertTrue("Should satify Applicative law #3 with fapply", expected3.equals(actual3));
+
+        // Law #4
+        // Compose function:
+        // (.) :: (b -> c) -> (a -> b) -> (a -> c)
+        final Function<Function<Integer, Integer>, Function<Function<Integer, Integer>, Function<Integer, Integer>>> compose = f1 -> g1 -> (x -> f1.apply(g1.apply(x)));
+
+        // Expected
+        final Either<String, Integer> expected4 = Either.fapply(
+            Either.right(f),
+            Either.fapply(
+                Either.right(g),
+                Either.right(i)
+            )
+        );
+
+        // Actual
+        final Either<String, Integer> actual4 = Either.fapply(
+            Either.fapply(
+                Either.fapply(
+                    Either.pure(compose),
+                    Either.right(f)
+                ),
+                Either.right(g)
+            ),
+            Either.right(i)
+        );
+
+        assertEquals("Should satify Applicative law #4 with fapply", expected4, actual4);
+        assertTrue("Should satify Applicative law #4 with fapply", expected4.equals(actual4));
+    }
 }
