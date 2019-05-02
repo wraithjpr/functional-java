@@ -130,6 +130,11 @@ public abstract class Either<L, A> {
     public abstract <B, A1> Either<L, B> apply(Either<L, A1> fa);
 
     /**
+     * ap() equivalent of apply().
+     */
+    public abstract <B, A1> Either<L, B> ap(Either<L, A1> fa);
+
+    /**
      * Left implementation of Either.
      */
     static final class Left<L, A> extends Either<L, A> {
@@ -211,6 +216,11 @@ public abstract class Either<L, A> {
         @Override
         public <B, A1> Either<L, B> apply(Either<L, A1> fa) {
             return Either.<L, B>left(value);
+        }
+
+        @Override
+        public <B, A1> Either<L, B> ap(Either<L, A1> fa) {
+            return apply(fa);
         }
 
         @Override
@@ -331,6 +341,11 @@ public abstract class Either<L, A> {
             Function<? super A1, ? extends B> fxn = (Function<? super A1, ? extends B>) value;
 
             return fa.map(fxn);
+        }
+
+        @Override
+        public <B, A1> Either<L, B> ap(Either<L, A1> fa) {
+            return apply(fa);
         }
 
         @Override
