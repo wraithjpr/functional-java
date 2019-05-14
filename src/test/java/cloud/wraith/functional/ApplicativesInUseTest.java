@@ -56,33 +56,73 @@ public class ApplicativesInUseTest {
         // add x y = x + y
         final Function<Integer, Function<Integer, Integer>> add = x -> y -> x + y;
 
-        final Function<String, Function<Integer, Function<Integer, Integer>>> assertEqualsCurried = message -> expected -> actual -> {
-            assertEquals(message, expected, actual);
-            return actual;
-        };
+        // assertEquals :: String -> int -> int -> ()
+        final Function<String, Function<Integer, Function<Integer, Integer>>> assertEqualsCurried
+            = message -> expected -> actual -> {
+                assertEquals(message, expected, actual);
+                return actual;
+            };
 
-        final Either<Object, Function<Integer, Integer>> test = Either.pure(assertEqualsCurried)
-            .ap(Either.right("should be 32"))
-            .ap(Either.right(32));
+        // test :: int -> int -> ()
+        final Function<Integer, Function<Integer, Integer>> test
+            = assertEqualsCurried.apply("24 + 8 should be 32");
 
-        test.ap(
-            Either.pure(add).ap(Either.right(24)).ap(Either.right(8))
-        );
+        final int expected = 32;
+        final int actual = add.apply(24).apply(8);
+
+        Either.pure(test).ap(Either.right(expected)).ap(Either.right(actual));
+
     }
 
     /**
      * We can validate using applicatives.
      */
-    @Ignore
+    @Test
     public void validateWithApplicatives() {
-        Predicate<Integer> check = x -> x > 10;
-        String message = "Value of %d should be > 10";
+        // Set up local variables and functions
+        final int VALID_VALUE = 20;
+        final int INVALID_VALUE = 9;
 
-        Function<Predicate<Integer>, Function<String, Function<Integer, Either<String, Integer>>>> validateCurried =
-            pred -> errMsg -> x -> pred.test(x) ? Either.right(x) : Either.left(String.format(errMsg, x));
+        final Predicate<Integer> check = x -> x > 10;
+        final String message = "Value of %d should be > 10";
 
-        Function<Integer, Either<String, Integer>> validate = validateCurried.apply(check).apply(message);
+        final Function<Predicate<Integer>, Function<String, Function<Integer, Either<String, Integer>>>> validateCurried
+            = pred -> errMsg -> x -> pred.test(x) ? Either.right(x) : Either.left(String.format(errMsg, x));
 
-        Either<String, Integer> validatedX = Either.pure(20);    //TODO we need a flatmap/bind
+        final Function<Integer, Either<String, Integer>> validateFxn = validateCurried.apply(check).apply(message);
+
+        final class AnX {
+            final int value;
+
+            AnX(final int value) {
+                this.value = value;
+            }
+
+            int getX() {
+                return value;
+            }
+        }
+
+        final Function<Integer, AnX> makeAnX = (Integer x) -> {
+            return new AnX(x);
+        };
+
+        // Run the test for valid value
+        final Either<String, Integer> validatedX = validateFxn.apply(VALID_VALUE);
+        final Either<String, AnX> eitherAnX = Either.<String, Function<Integer, AnX>>pure(makeAnX).ap(validatedX);
+
+        // Verify assertions
+        assertEquals("x should be 20", 20, VALID_VALUE);
+        assertTrue("Should be a Right", eitherAnX.isRight());
+        assertEquals(String.format("Value should be %s", VALID_VALUE), VALID_VALUE, eitherAnX.getOrElse(new AnX(-1)).getX());
+
+        // Run the test for an invalid value
+        final Either<String, Integer> invalidatedX = validateFxn.apply(INVALID_VALUE);
+        final Either<String, AnX> error = Either.<String, Function<Integer, AnX>>pure(makeAnX).ap(invalidatedX);
+
+        // Verify assertions
+        assertEquals("x should be 9", 9, INVALID_VALUE);
+        assertTrue("Should be a Left", error.isLeft());
+        assertEquals("Should be an error message", String.format(message, INVALID_VALUE), error.getLeftOrElse(""));
     }
 }
