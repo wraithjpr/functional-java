@@ -59,7 +59,7 @@ public abstract class Either<L, A> {
     /**
      * Functor fmap function.
      *
-     * <p>{@code} fmap :: (a -> b) -> Either l a -> Either l b {code}
+     * <p>{@code fmap :: (a -> b) -> Either l a -> Either l b }
      *
      * @param <A> The right-hand type of the argument Either
      * @param <B> The right-hand type of the result Either
@@ -77,6 +77,7 @@ public abstract class Either<L, A> {
 
     /**
      * Map function.
+     * Equivalent of Functor fmap.
      *
      * @param <B> The right-hand type of the result Either
      * @param fxn The mapping function; maps argument values in the type A to result values in the type B
@@ -127,12 +128,67 @@ public abstract class Either<L, A> {
      * @param fa The functor to map using the mapping function wrapped by this Either
      * @return The result Either&lt;L,&nbsp;B&gt;
      */
-    public abstract <B, A1> Either<L, B> apply(Either<L, A1> fa);
+    public abstract <B, A1> Either<L, B> apply(final Either<L, A1> fa);
 
     /**
      * ap() equivalent of apply().
      */
-    public abstract <B, A1> Either<L, B> ap(Either<L, A1> fa);
+    public <B, A1> Either<L, B> ap(final Either<L, A1> fa) {
+        return apply(fa);
+    }
+
+    /**
+     * Monad return cannot be defined as return is a reserved token in Java.
+     * So name it mreturn instead.
+     *
+     * <p>class Applicative m => Monad m where
+     *    return :: a -> m a
+     *    (>>=) :: ma -> (a -> m b) -> mb
+     *
+     * <p>return = pure
+     */
+    public static <L, A> Either<L, A> mreturn(final A value) {
+        return pure(value);
+    }
+
+    /**
+     * Monad (>>=) function.
+     * Otherwise known as bind or chain.
+     *
+     * <p>class Applicative m => Monad m where
+     *    return :: a -> m a
+     *    (>>=) :: ma -> (a -> m b) -> mb
+     *
+     * @param <A> The right-hand type of the argument Either
+     * @param <B> The right-hand type of the result Either
+     * @param <L> The left-hand type of both argument and result Eithers
+     * @param fxn The mapping function; maps argument values in the type A to result values in the type Either&lt;L,&nbsp;B&gt;
+     * @param ma  The source Either&lt;L,&nbsp;A&gt; monad
+     * @return The result Either&lt;L,&nbsp;B&gt; monad
+     */
+    public static <L, A, B> Either<L, ? extends B> mbind(final Either<L, A> ma, final Function<? super A, Either<L, ? extends B>> fxn) {
+        return ma.bind(fxn);
+    }
+
+    /**
+     * Bind function.
+     *
+     * @param <B> The right-hand type of the result Either
+     * @param fxn The mapping function; maps argument values in the type A to result values in the type Either&lt;L,&nbsp;B&gt;
+     * @return The result Either&lt;L,&nbsp;B&gt; monad
+     */
+    public abstract <B> Either<L, ? extends B> bind(final Function<? super A, Either<L, ? extends B>> fxn);
+
+    /**
+     * Flatmap function.
+     *
+     * @param <B> The right-hand type of the result Either
+     * @param fxn The mapping function; maps argument values in the type A to result values in the type Either&lt;L,&nbsp;B&gt;
+     * @return The result Either&lt;L,&nbsp;B&gt; monad
+     */
+    public <B> Either<L, ? extends B> flatmap(final Function<? super A, Either<L, ? extends B>> fxn) {
+        return bind(fxn);
+    }
 
     /**
      * Left implementation of Either.
@@ -214,13 +270,13 @@ public abstract class Either<L, A> {
         }
 
         @Override
-        public <B, A1> Either<L, B> apply(Either<L, A1> fa) {
+        public <B, A1> Either<L, B> apply(final Either<L, A1> fa) {
             return Either.<L, B>left(value);
         }
 
         @Override
-        public <B, A1> Either<L, B> ap(Either<L, A1> fa) {
-            return apply(fa);
+        public  <B> Either<L, ? extends B> bind(final Function<? super A, Either<L, ? extends B>> fxn) {
+            return Either.<L, B>left(value);
         }
 
         @Override
@@ -333,7 +389,7 @@ public abstract class Either<L, A> {
         }
 
         @Override
-        public <B, A1> Either<L, B> apply(Either<L, A1> fa) {
+        public <B, A1> Either<L, B> apply(final Either<L, A1> fa) {
             Objects.requireNonNull(fa);
             Objects.requireNonNull(value instanceof Function<?, ?> ? value : null);
 
@@ -344,8 +400,10 @@ public abstract class Either<L, A> {
         }
 
         @Override
-        public <B, A1> Either<L, B> ap(Either<L, A1> fa) {
-            return apply(fa);
+        public  <B> Either<L, ? extends B> bind(final Function<? super A, Either<L, ? extends B>> fxn) {
+            Objects.requireNonNull(fxn);
+
+            return fxn.apply(value);
         }
 
         @Override
