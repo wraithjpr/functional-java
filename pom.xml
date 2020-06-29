@@ -11,6 +11,7 @@
   <name>functional-java</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
+  <description>Experiments with functional programming implemented in Java</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
